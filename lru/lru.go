@@ -83,6 +83,19 @@ func (c *Cache) Get(id string) []byte {
 	return nil
 }
 
+// Pop removes and returns the data associated with id in the cache, or nil if
+// it was not present.
+func (c *Cache) Pop(id string) []byte {
+	c.μ.Lock()
+	defer c.μ.Unlock()
+	if e := c.res[id]; e != nil {
+		e.pop()
+		delete(c.res, id)
+		return e.data
+	}
+	return nil
+}
+
 // Size returns the current resident size of the cached data, in bytes.
 func (c *Cache) Size() int {
 	c.μ.Lock()
