@@ -36,7 +36,9 @@ func New(capacity int) *Cache {
 	}
 }
 
-// Put stores of data into the cache under the given id.
+// Put stores of data into the cache under the given id.  The cache does not
+// copy the contents of data; the caller is responsible for passing in a copy
+// if the original slice will be modified.
 func (c *Cache) Put(id string, data []byte) {
 	c.μ.Lock()
 	defer c.μ.Unlock()
