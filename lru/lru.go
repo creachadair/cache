@@ -103,6 +103,9 @@ func (c *Cache) Size() int {
 	return c.size
 }
 
+// Cap returns the capacity of the cache, in bytes.
+func (c *Cache) Cap() int { return c.cap }
+
 // Reset removes all data currently stored in c, leaving it empty.
 // This operation does not change the capacity of c.
 func (c *Cache) Reset() {
