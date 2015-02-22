@@ -18,7 +18,8 @@ package lru
 import "sync"
 
 // Cache implements a string-keyed LRU cache of byte buffers.  A *Cache is safe
-// for concurrent access by multiple goroutines.
+// for concurrent access by multiple goroutines.  A nil *Cache behaves as a
+// cache with 0 capacity.
 type Cache struct {
 	μ    sync.Mutex
 	size int               // resident size, in bytes
@@ -40,22 +41,24 @@ func New(capacity int) *Cache {
 // copy the contents of data; the caller is responsible for passing in a copy
 // if the original slice will be modified.
 func (c *Cache) Put(id string, data []byte) {
-	c.μ.Lock()
-	defer c.μ.Unlock()
-	if len(data) > c.cap {
-		return // no room for this block no matter what
-	}
-	e := c.evict(id, data)
-	for c.size+len(data) > c.cap {
-		vic := c.seq.prev
-		if vic == c.seq {
-			panic("invalid ring structure")
+	if c != nil {
+		c.μ.Lock()
+		defer c.μ.Unlock()
+		if len(data) > c.cap {
+			return // no room for this block no matter what
 		}
-		c.evict(vic.id, nil)
+		e := c.evict(id, data)
+		for c.size+len(data) > c.cap {
+			vic := c.seq.prev
+			if vic == c.seq {
+				panic("invalid ring structure")
+			}
+			c.evict(vic.id, nil)
+		}
+		e.push(c.seq)
+		c.size += len(data)
+		c.res[id] = e
 	}
-	e.push(c.seq)
-	c.size += len(data)
-	c.res[id] = e
 }
 
 func (c *Cache) evict(id string, data []byte) *entry {
@@ -71,14 +74,16 @@ func (c *Cache) evict(id string, data []byte) *entry {
 
 // Get returns the data associated with id in the cache, or nil if not present.
 func (c *Cache) Get(id string) []byte {
-	c.μ.Lock()
-	defer c.μ.Unlock()
-	if e := c.res[id]; e != nil {
-		if c.seq.next != e {
-			e.pop()
-			e.push(c.seq)
+	if c != nil {
+		c.μ.Lock()
+		defer c.μ.Unlock()
+		if e := c.res[id]; e != nil {
+			if c.seq.next != e {
+				e.pop()
+				e.push(c.seq)
+			}
+			return e.data
 		}
-		return e.data
 	}
 	return nil
 }
@@ -86,33 +91,45 @@ func (c *Cache) Get(id string) []byte {
 // Pop removes and returns the data associated with id in the cache, or nil if
 // it was not present.
 func (c *Cache) Pop(id string) []byte {
-	c.μ.Lock()
-	defer c.μ.Unlock()
-	if e := c.res[id]; e != nil {
-		e.pop()
-		delete(c.res, id)
-		return e.data
+	if c != nil {
+		c.μ.Lock()
+		defer c.μ.Unlock()
+		if e := c.res[id]; e != nil {
+			e.pop()
+			delete(c.res, id)
+			return e.data
+		}
 	}
 	return nil
 }
 
 // Size returns the current resident size of the cached data, in bytes.
 func (c *Cache) Size() int {
+	if c == nil {
+		return 0
+	}
 	c.μ.Lock()
 	defer c.μ.Unlock()
 	return c.size
 }
 
 // Cap returns the capacity of the cache, in bytes.
-func (c *Cache) Cap() int { return c.cap }
+func (c *Cache) Cap() int {
+	if c == nil {
+		return 0
+	}
+	return c.cap
+}
 
 // Reset removes all data currently stored in c, leaving it empty.
 // This operation does not change the capacity of c.
 func (c *Cache) Reset() {
-	c.μ.Lock()
-	defer c.μ.Unlock()
-	for id := range c.res {
-		c.evict(id, nil)
+	if c != nil {
+		c.μ.Lock()
+		defer c.μ.Unlock()
+		for id := range c.res {
+			c.evict(id, nil)
+		}
 	}
 }
 

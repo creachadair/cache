@@ -100,6 +100,23 @@ func TestConcurrency(t *testing.T) {
 	wg.Wait()
 }
 
+func TestEmpties(t *testing.T) {
+	for _, c := range []*Cache{nil, New(0)} {
+		if size := c.Size(); size != 0 {
+			t.Errorf("Size(nil): got %d, want 0", size)
+		}
+		if cap := c.Cap(); cap != 0 {
+			t.Errorf("Cap(nil): got %d, want 0", cap)
+		}
+		c.Put("foo", []byte("bar")) // shouldn't crash...
+		// ...but also shouldn't store anything
+		if data := c.Get("foo"); data != nil {
+			t.Errorf("Get(foo): got %q, want nil", string(data))
+		}
+		c.Reset() // shouldn't crash
+	}
+}
+
 func (e *entry) String() string {
 	var buf bytes.Buffer
 	for cur := e.next; ; cur = cur.next {
