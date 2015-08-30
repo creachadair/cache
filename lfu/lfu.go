@@ -24,7 +24,7 @@ type Cache struct {
 	μ       sync.Mutex
 	size    int            // resident size, number of entries present
 	cap     int            // maximum capacity, in entries (invariant: size ≤ cap)
-	heap    eheap          // min-heap by frequency of use
+	heap    []*entry       // min-heap by frequency of use
 	res     map[string]int // resident blocks, id → heap-index
 	onEvict func(interface{})
 }
@@ -122,8 +122,6 @@ type entry struct {
 	value interface{}
 	uses  int
 }
-
-type eheap []*entry
 
 func (c *Cache) add(id string, value interface{}) {
 	pos := len(c.heap)

@@ -42,7 +42,7 @@ func TestCapacity(t *testing.T) {
 	}
 	for _, test := range tests {
 		victim = ""
-		t.Logf("before %s %q: %s", test.op, test.id, c.heap)
+		t.Logf("before %s %q: %s", test.op, test.id, eheap(c.heap))
 		switch test.op {
 		case "+":
 			c.Put(test.id, test.value)
@@ -60,7 +60,7 @@ func TestCapacity(t *testing.T) {
 		if test.victim != "" && victim != test.victim {
 			t.Errorf("Victim after %s %q: got %q, want %q", test.op, test.id, victim, test.victim)
 		}
-		t.Logf(" after %s %q: %s; victim=%q", test.op, test.id, c.heap, victim)
+		t.Logf(" after %s %q: %s; victim=%q", test.op, test.id, eheap(c.heap), victim)
 	}
 }
 
@@ -125,6 +125,8 @@ func TestEmpties(t *testing.T) {
 		c.Reset() // shouldn't crash
 	}
 }
+
+type eheap []*entry
 
 func (e eheap) String() string {
 	if len(e) == 0 {
