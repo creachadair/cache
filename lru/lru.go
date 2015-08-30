@@ -101,21 +101,6 @@ func (c *Cache) Get(id string) interface{} {
 	return nil
 }
 
-// Pop removes and returns the data associated with id in the cache, or nil if
-// it was not present.
-func (c *Cache) Pop(id string) interface{} {
-	if c != nil {
-		c.μ.Lock()
-		defer c.μ.Unlock()
-		if e := c.res[id]; e != nil {
-			e.pop()
-			delete(c.res, id)
-			return e.value
-		}
-	}
-	return nil
-}
-
 // Size returns the number of entries currently resident in the cache.
 func (c *Cache) Size() int {
 	if c == nil {
