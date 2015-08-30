@@ -123,6 +123,8 @@ type entry struct {
 	uses  int
 }
 
+// add inserts a new entry into the cache mapping id to value.  Assumes id is
+// not already resident, and that c.μ is held.
 func (c *Cache) add(id string, value interface{}) {
 	pos := len(c.heap)
 	elt := &entry{id: id, value: value, uses: 1}
@@ -141,6 +143,8 @@ func (c *Cache) add(id string, value interface{}) {
 	c.res[id] = pos
 }
 
+// evict removes the least-frequently used element from the cache, calling the
+// eviction handler if necessary for its value.  Assumes that c.μ is held.
 func (c *Cache) evict() {
 	vic := c.heap[0]
 	if c.onEvict != nil {
@@ -154,6 +158,8 @@ func (c *Cache) evict() {
 	c.size--
 }
 
+// fix restores heap order to c.heap at or below pos, assuming that the weight
+// of pos has remained the same or increased.  Assumes c.μ is held.
 func (c *Cache) fix(pos int) {
 	for {
 		mc := 2 * pos
