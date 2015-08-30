@@ -3,55 +3,65 @@ package lru
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 )
 
 func TestCapacity(t *testing.T) {
-	c := New(16)
+	var victim string
+	c := New(3, OnEvict(func(v interface{}) {
+		victim = v.(string)
+	}))
 	tests := []struct {
 		op, id, value string
-		size          int
+		victim        string
 	}{
-		{"+", "x", "abc", 3},
-		{"+", "y", "defghij", 10},
-		{"?", "x", "abc", 10}, // hit
-		{"+", "z", "123456", 16},
-		{"+", "x", "ABC", 16},
-		{"?", "y", "defghij", 16},          // hit
-		{"?", "x", "ABC", 16},              // hit
-		{"?", "z", "123456", 16},           // hit
-		{"+", "e", "qqq", 12},              // evict y
-		{"?", "y", "", 12},                 // miss
-		{"?", "x", "ABC", 12},              // hit
-		{"+", "m", "123456789", 15},        // evict z
-		{"?", "z", "", 15},                 // miss
-		{"?", "x", "ABC", 15},              // hit
-		{"?", "e", "qqq", 15},              // hit
-		{"?", "m", "123456789", 15},        // hit
-		{"?", "q", "", 15},                 // miss
-		{"?", "e", "qqq", 15},              // hit
-		{"+", "k", "0123456789abcdef", 16}, // evict x, m, e
-		{"?", "k", "0123456789abcdef", 16}, // hit
-		{"?", "e", "", 16},                 // miss
+		{"+", "x", "abc", ""},                 // add x
+		{"+", "y", "defghij", ""},             // add y
+		{"?", "x", "abc", ""},                 // hit
+		{"+", "z", "123456", ""},              // add z
+		{"+", "x", "ABC", "abc"},              // replace x
+		{"?", "y", "defghij", ""},             // hit
+		{"?", "x", "ABC", ""},                 // hit
+		{"?", "z", "123456", ""},              // hit
+		{"+", "e", "qqq", "defghij"},          // evict y
+		{"?", "y", "", ""},                    // miss
+		{"?", "x", "ABC", ""},                 // hit
+		{"+", "m", "123456789", "123456"},     // evict z
+		{"?", "z", "", ""},                    // miss
+		{"?", "x", "ABC", ""},                 // hit
+		{"?", "e", "qqq", ""},                 // hit
+		{"?", "m", "123456789", ""},           // hit
+		{"?", "q", "", ""},                    // miss
+		{"?", "e", "qqq", ""},                 // hit
+		{"+", "k", "0123456789abcdef", "ABC"}, // evict x
+		{"?", "k", "0123456789abcdef", ""},    // hit
+		{"?", "m", "123456789", ""},           // hit
+		{"?", "x", "", ""},                    // miss
+		{"?", "e", "qqq", ""},                 // hit
 	}
 	for _, test := range tests {
+		victim = ""
 		t.Logf("before %s %q: %s", test.op, test.id, c.seq)
 		switch test.op {
 		case "+":
-			c.Put(test.id, []byte(test.value))
+			c.Put(test.id, test.value)
 		case "?":
-			got := string(c.Get(test.id))
+			got := c.Get(test.id)
+			if got == nil {
+				got = ""
+			}
 			if got != test.value {
 				t.Errorf("Get %q: got %q, want %q", test.id, got, test.value)
 			}
 		default:
 			t.Fatalf("Invalid test: %+v", test)
 		}
-		if c.size != test.size {
-			t.Errorf("Size after %s %q: got %d, want %d", test.op, test.id, c.size, test.size)
+		if test.victim != "" && victim != test.victim {
+			t.Errorf("Victim after %s %q: got %q, want %q", test.op, test.id, victim, test.victim)
 		}
-		t.Logf(" after %s %q: %s", test.op, test.id, c.seq)
+		t.Logf(" after %s %q: %s; victim=%q", test.op, test.id, c.seq, victim)
 	}
 }
 
@@ -62,7 +72,7 @@ func TestConcurrency(t *testing.T) {
 	ch := make(chan string)
 	var wg sync.WaitGroup
 	for i := 0; i < numWorkers; i++ {
-		v := bytes.Repeat([]byte{'A' + byte(i)}, 274)
+		v := strings.Repeat(string('A'+byte(i)), 274)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -108,10 +118,10 @@ func TestEmpties(t *testing.T) {
 		if cap := c.Cap(); cap != 0 {
 			t.Errorf("Cap(nil): got %d, want 0", cap)
 		}
-		c.Put("foo", []byte("bar")) // shouldn't crash...
+		c.Put("foo", "bar") // shouldn't crash...
 		// ...but also shouldn't store anything
-		if data := c.Get("foo"); data != nil {
-			t.Errorf("Get(foo): got %q, want nil", string(data))
+		if v := c.Get("foo"); v != nil {
+			t.Errorf("Get(foo): got %q, want nil", v)
 		}
 		c.Reset() // shouldn't crash
 	}
@@ -120,7 +130,11 @@ func TestEmpties(t *testing.T) {
 func (e *entry) String() string {
 	var buf bytes.Buffer
 	for cur := e.next; ; cur = cur.next {
-		fmt.Fprintf(&buf, "%q [%q] ", cur.id, string(cur.data))
+		v := cur.value
+		if v == nil {
+			v = ""
+		}
+		fmt.Fprintf(&buf, "%q [%s] ", cur.id, v.(string))
 		if cur.prev.next == cur {
 			fmt.Fprint(&buf, "✓ ")
 		} else {
