@@ -6,12 +6,18 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"bitbucket.org/creachadair/cache/value"
 )
+
+type evalue string
+
+func (evalue) Size() int { return 1 }
 
 func TestCapacity(t *testing.T) {
 	var victim string
-	c := New(3, OnEvict(func(v interface{}) {
-		victim = v.(string)
+	c := New(3, OnEvict(func(v value.Interface) { // # entries
+		victim = string(v.(evalue))
 	}))
 	tests := []struct {
 		op, id, value string
@@ -46,13 +52,13 @@ func TestCapacity(t *testing.T) {
 		t.Logf("before %s %q: %s", test.op, test.id, c.seq)
 		switch test.op {
 		case "+":
-			c.Put(test.id, test.value)
+			c.Put(test.id, evalue(test.value))
 		case "?":
 			got := c.Get(test.id)
 			if got == nil {
-				got = ""
+				got = evalue("")
 			}
-			if got != test.value {
+			if got != evalue(test.value) {
 				t.Errorf("Get %q: got %q, want %q", test.id, got, test.value)
 			}
 		default:
@@ -79,7 +85,7 @@ func TestConcurrency(t *testing.T) {
 			for key := range ch {
 				switch key[0] {
 				case '+':
-					c.Put(key[1:], v)
+					c.Put(key[1:], evalue(v))
 				case '?':
 					c.Get(key[1:])
 				case '*':
@@ -118,7 +124,7 @@ func TestEmpties(t *testing.T) {
 		if cap := c.Cap(); cap != 0 {
 			t.Errorf("Cap(nil): got %d, want 0", cap)
 		}
-		c.Put("foo", "bar") // shouldn't crash...
+		c.Put("foo", evalue("bar")) // shouldn't crash...
 		// ...but also shouldn't store anything
 		if v := c.Get("foo"); v != nil {
 			t.Errorf("Get(foo): got %q, want nil", v)
@@ -132,9 +138,9 @@ func (e *entry) String() string {
 	for cur := e.next; ; cur = cur.next {
 		v := cur.value
 		if v == nil {
-			v = ""
+			v = evalue("")
 		}
-		fmt.Fprintf(&buf, "%q [%s] ", cur.id, v.(string))
+		fmt.Fprintf(&buf, "%q [%s] ", cur.id, string(v.(evalue)))
 		if cur.prev.next == cur {
 			fmt.Fprint(&buf, "✓ ")
 		} else {
