@@ -59,12 +59,11 @@ func (c *Cache) Put(id string, value value.Interface) {
 		vsize := value.Size()
 		if vsize < 0 {
 			panic("negative value size")
+		} else if vsize > c.cap {
+			return // there is no room for this value no matter what
 		}
 		c.μ.Lock()
 		defer c.μ.Unlock()
-		if vsize > c.cap {
-			return // there is no room for this value no matter what
-		}
 		e := c.evict(id, value)
 		for c.size+vsize > c.cap {
 			vic := c.seq.prev
