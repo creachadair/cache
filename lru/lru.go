@@ -65,6 +65,9 @@ func (c *Cache) Put(id string, value value.Interface) {
 		c.μ.Lock()
 		defer c.μ.Unlock()
 		e := c.evict(id, value)
+		if e == nil {
+			e = newEntry(id, value)
+		}
 		for c.size+vsize > c.cap {
 			vic := c.seq.prev
 			if vic == c.seq {
@@ -78,9 +81,22 @@ func (c *Cache) Put(id string, value value.Interface) {
 	}
 }
 
-// evict returns an entry mapping id to value.  If there was already an entry
-// for id, it is removed from the ring and returned (in which case c.size is
-// decremented).  Otherwise a fresh entry is created for the mapping.
+// Drop discards the value stored in the cache for id, if any, and returns the
+// value discarded or nil.
+func (c *Cache) Drop(id string) value.Interface {
+	if c != nil {
+		c.μ.Lock()
+		defer c.μ.Unlock()
+		e := c.evict(id, nil)
+		if e != nil {
+			return e.value
+		}
+	}
+	return nil
+}
+
+// evict removes and returns the entry mapping id to value, if one exists.  If
+// not, evict returns nil.
 func (c *Cache) evict(id string, value value.Interface) *entry {
 	if e := c.res[id]; e != nil {
 		e.pop()
@@ -92,7 +108,7 @@ func (c *Cache) evict(id string, value value.Interface) *entry {
 		e.value = value
 		return e
 	}
-	return newEntry(id, value)
+	return nil
 }
 
 // Get returns the data associated with id in the cache, or nil if not present.
