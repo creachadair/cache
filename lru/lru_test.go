@@ -46,6 +46,9 @@ func TestCapacity(t *testing.T) {
 		{"?", "m", "123456789", ""},           // hit
 		{"?", "x", "", ""},                    // miss
 		{"?", "e", "qqq", ""},                 // hit
+		{"-", "e", "", "qqq"},                 // drop hit
+		{"-", "x", "", ""},                    // drop miss
+		{"?", "e", "", ""},                    // miss
 	}
 	for _, test := range tests {
 		victim = ""
@@ -60,6 +63,14 @@ func TestCapacity(t *testing.T) {
 			}
 			if got != evalue(test.value) {
 				t.Errorf("Get %q: got %q, want %q", test.id, got, test.value)
+			}
+		case "-":
+			got := c.Drop(test.id)
+			if got == nil {
+				got = evalue("")
+			}
+			if got != evalue(test.value) {
+				t.Errorf("Drop %q: got %q, want %q", test.id, got, test.value)
 			}
 		default:
 			t.Fatalf("Invalid test: %+v", test)
