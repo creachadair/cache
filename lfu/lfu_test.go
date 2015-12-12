@@ -148,3 +148,15 @@ func (e eheap) String() string {
 	}
 	return buf.String()
 }
+
+func ExampleBasicUsage() {
+	c := New(200)
+	c.Put("x", value.Nil)
+	c.Put("y", value.Nil)
+	if v := c.Get("x"); v != nil {
+		fmt.Println("x is present")
+	} else {
+		fmt.Println("x is absent")
+	}
+	// Output: x is present
+}

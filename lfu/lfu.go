@@ -9,7 +9,7 @@
 //    if v := c.Get("x"); v != nil {
 //       doStuff(v)
 //    } else {
-//       handleCacheMiss("x)
+//       handleCacheMiss("x")
 //    }
 //    c.Reset()
 //
