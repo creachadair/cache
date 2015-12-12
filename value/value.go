@@ -24,3 +24,11 @@ func (s String) Size() int { return len(s) }
 type Bytes []byte
 
 func (b Bytes) Size() int { return len(b) }
+
+// Nil is a placeholder value to use in a cache where the keys are the values
+// being cached.  Nil has size 1.
+const Nil = nilValue(0)
+
+type nilValue byte
+
+func (nilValue) Size() int { return 1 }
