@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"bitbucket.org/creachadair/cache/value"
+	"bitbucket.org/creachadair/cache"
 )
 
 type evalue string
@@ -16,7 +16,7 @@ func (evalue) Size() int { return 1 }
 
 func TestCapacity(t *testing.T) {
 	var victim string
-	c := New(3, OnEvict(func(v value.Interface) { // # entries
+	c := New(3, OnEvict(func(v cache.Value) { // # entries
 		victim = string(v.(evalue))
 	}))
 	tests := []struct {
@@ -151,8 +151,8 @@ func (e eheap) String() string {
 
 func ExampleBasicUsage() {
 	c := New(200)
-	c.Put("x", value.Nil)
-	c.Put("y", value.Nil)
+	c.Put("x", cache.Nil)
+	c.Put("y", cache.Nil)
 	if v := c.Get("x"); v != nil {
 		fmt.Println("x is present")
 	} else {

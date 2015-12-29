@@ -18,7 +18,7 @@ package lfu
 import (
 	"sync"
 
-	"bitbucket.org/creachadair/cache/value"
+	"bitbucket.org/creachadair/cache"
 )
 
 // Cache implements a string-keyed LFU cache of arbitrary values.  A *Cache is
@@ -30,7 +30,7 @@ type Cache struct {
 	cap     int            // maximum capacity
 	heap    []*entry       // min-heap by frequency of use
 	res     map[string]int // resident blocks, id → heap-index
-	onEvict func(value.Interface)
+	onEvict func(cache.Value)
 }
 
 // An Option is a configurable setting for a cache.
@@ -38,7 +38,7 @@ type Option func(*Cache)
 
 // OnEvict causes f to be called whenever a value is evicted from the cache.
 // The value being evicted is passed to f.
-func OnEvict(f func(value.Interface)) Option { return func(c *Cache) { c.onEvict = f } }
+func OnEvict(f func(cache.Value)) Option { return func(c *Cache) { c.onEvict = f } }
 
 // New returns a new empty cache with the specified capacity.
 func New(capacity int, opts ...Option) *Cache {
@@ -54,7 +54,7 @@ func New(capacity int, opts ...Option) *Cache {
 
 // Put stores value into the cache under the given id.  A Put counts as a use
 // on first insertion, but not subsequently.
-func (c *Cache) Put(id string, value value.Interface) {
+func (c *Cache) Put(id string, value cache.Value) {
 	if c != nil && c.cap > 0 {
 		vsize := value.Size()
 		if vsize < 0 {
@@ -85,7 +85,7 @@ func (c *Cache) Put(id string, value value.Interface) {
 }
 
 // Get returns the data associated with id in the cache, or nil if not present.
-func (c *Cache) Get(id string) value.Interface {
+func (c *Cache) Get(id string) cache.Value {
 	if c != nil {
 		c.μ.Lock()
 		defer c.μ.Unlock()
@@ -132,13 +132,13 @@ func (c *Cache) Reset() {
 // entry represents a node in a min-heap by frequency of use.
 type entry struct {
 	id    string
-	value value.Interface
+	value cache.Value
 	uses  int
 }
 
 // add inserts a new entry into the cache mapping id to value.  Assumes id is
 // not already resident, and that c.μ is held.
-func (c *Cache) add(id string, value value.Interface) {
+func (c *Cache) add(id string, value cache.Value) {
 	pos := len(c.heap)
 	elt := &entry{id: id, value: value, uses: 1}
 	c.heap = append(c.heap, elt)

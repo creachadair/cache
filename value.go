@@ -1,13 +1,13 @@
-// Package value defines the common interface shared by caches to represent
+// Package cache defines the common interface shared by caches to represent
 // cached values.
-package value
+package cache
 
-// Interface defines the required behaviour of a cached value, which is to
-// return its nominal size as a non-negative integer.  The units of size are
-// dependent on the cache: Values in a cache whose capacity is a number of
-// elements will have size 1.  Values in a cache whose capacity is in bytes
-// will return byte counts.
-type Interface interface {
+// Value defines the required behaviour of a cached value, which is to return
+// its nominal size as a non-negative integer.  The units of size are dependent
+// on the cache: Values in a cache whose capacity is a number of elements will
+// have size 1.  Values in a cache whose capacity is in bytes will return byte
+// counts.
+type Value interface {
 	// Size returns a non-negative integer expressing the size of the value.
 	// If a negative value is returned, cache operations will panic.
 	Size() int
@@ -32,3 +32,11 @@ const Nil = nilValue(0)
 type nilValue byte
 
 func (nilValue) Size() int { return 1 }
+
+// Entry is a convenience wrapper for storing an arbitrary value as a single
+// entry of size 1.
+type Entry struct {
+	Value interface{}
+}
+
+func (Entry) Size() int { return 1 }

@@ -18,7 +18,7 @@ package lru
 import (
 	"sync"
 
-	"bitbucket.org/creachadair/cache/value"
+	"bitbucket.org/creachadair/cache"
 )
 
 // Cache implements a string-keyed LRU cache of arbitrary values.  A *Cache is
@@ -30,7 +30,7 @@ type Cache struct {
 	cap     int               // maximum capacity
 	seq     *entry            // sentinel for doubly-linked ring
 	res     map[string]*entry // resident blocks
-	onEvict func(value.Interface)
+	onEvict func(cache.Value)
 }
 
 // An Option is a configurable setting for a cache.
@@ -38,7 +38,7 @@ type Option func(*Cache)
 
 // OnEvict causes f to be called whenever a value is evicted from the cache.
 // The value being evicted is passed to f.
-func OnEvict(f func(value.Interface)) Option { return func(c *Cache) { c.onEvict = f } }
+func OnEvict(f func(cache.Value)) Option { return func(c *Cache) { c.onEvict = f } }
 
 // New returns a new empty cache with the specified capacity.
 func New(capacity int, opts ...Option) *Cache {
@@ -54,7 +54,7 @@ func New(capacity int, opts ...Option) *Cache {
 }
 
 // Put stores value into the cache under the given id.
-func (c *Cache) Put(id string, value value.Interface) {
+func (c *Cache) Put(id string, value cache.Value) {
 	if c != nil && c.cap > 0 {
 		vsize := value.Size()
 		if vsize < 0 {
@@ -83,7 +83,7 @@ func (c *Cache) Put(id string, value value.Interface) {
 
 // Drop discards the value stored in the cache for id, if any, and returns the
 // value discarded or nil.
-func (c *Cache) Drop(id string) value.Interface {
+func (c *Cache) Drop(id string) cache.Value {
 	if c != nil {
 		c.μ.Lock()
 		defer c.μ.Unlock()
@@ -97,7 +97,7 @@ func (c *Cache) Drop(id string) value.Interface {
 
 // evict removes and returns the entry mapping id to value, if one exists.  If
 // not, evict returns nil.
-func (c *Cache) evict(id string, value value.Interface) *entry {
+func (c *Cache) evict(id string, value cache.Value) *entry {
 	if e := c.res[id]; e != nil {
 		e.pop()
 		if c.onEvict != nil {
@@ -112,7 +112,7 @@ func (c *Cache) evict(id string, value value.Interface) *entry {
 }
 
 // Get returns the data associated with id in the cache, or nil if not present.
-func (c *Cache) Get(id string) value.Interface {
+func (c *Cache) Get(id string) cache.Value {
 	if c != nil {
 		c.μ.Lock()
 		defer c.μ.Unlock()
@@ -157,7 +157,7 @@ func (c *Cache) Reset() {
 	}
 }
 
-func newEntry(id string, value value.Interface) *entry {
+func newEntry(id string, value cache.Value) *entry {
 	e := &entry{id: id, value: value}
 	e.next = e
 	e.prev = e
@@ -167,7 +167,7 @@ func newEntry(id string, value value.Interface) *entry {
 // entry represents a node in a doubly-linked ring structure.
 type entry struct {
 	id         string
-	value      value.Interface
+	value      cache.Value
 	prev, next *entry
 }
 
