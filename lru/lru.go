@@ -2,16 +2,15 @@
 // values.
 //
 // Basic usage:
-//    c := lru.New(200) // number of cache entries
-//    c.Put("x", v1)
-//    c.Put("y", v2)
-//    ...
-//    if v := c.Get("x"); v != nil {
-//       doStuff(v)
-//    } else {
-//       handleCacheMiss("x")
-//    }
-//    c.Reset()
+//   c := New(200)
+//   c.Put("x", cache.Nil)
+//   c.Put("y", cache.Nil)
+//   if v := c.Get("x"); v != nil {
+//      fmt.Println("x is present")
+//   } else {
+//      fmt.Println("x is absent")
+//   }
+//   c.Reset()
 //
 package lru
 
