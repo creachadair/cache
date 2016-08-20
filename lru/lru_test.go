@@ -164,7 +164,7 @@ func (e *entry) String() string {
 	return buf.String()
 }
 
-func ExampleBasicUsage() {
+func ExampleNew() {
 	c := New(200)
 	c.Put("x", cache.Nil)
 	c.Put("y", cache.Nil)
