@@ -1,3 +1,3 @@
-module bitbucket.org/creachadair/cache
+module github.com/creachadair/cache
 
 go 1.12

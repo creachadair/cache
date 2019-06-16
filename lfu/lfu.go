@@ -18,7 +18,7 @@ package lfu
 import (
 	"sync"
 
-	"bitbucket.org/creachadair/cache"
+	"github.com/creachadair/cache"
 )
 
 // Cache implements a string-keyed LFU cache of arbitrary values.  A *Cache is

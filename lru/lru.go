@@ -17,7 +17,7 @@ package lru
 import (
 	"sync"
 
-	"bitbucket.org/creachadair/cache"
+	"github.com/creachadair/cache"
 )
 
 // Cache implements a string-keyed LRU cache of arbitrary values.  A *Cache is

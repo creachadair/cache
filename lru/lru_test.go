@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"bitbucket.org/creachadair/cache"
+	"github.com/creachadair/cache"
 )
 
 type evalue string
