@@ -17,12 +17,14 @@ type Value interface {
 // Its size is the length of the string in bytes.
 type String string
 
+// Size implements the Value interface. The cached size is the number of bytes.
 func (s String) Size() int { return len(s) }
 
 // Bytes is a convenience wrapper for storing a byte slice as a cache value.
 // Its size is the length of the slice.
 type Bytes []byte
 
+// Size implements the Value interface. The cached size is the number of bytes.
 func (b Bytes) Size() int { return len(b) }
 
 // Nil is a placeholder value to use in a cache where the keys are the values
@@ -31,6 +33,7 @@ const Nil = nilValue(0)
 
 type nilValue byte
 
+// Size implements the Value interface. A Nil has size 1.
 func (nilValue) Size() int { return 1 }
 
 // Entry is a convenience wrapper for storing an arbitrary value as a single
@@ -39,4 +42,5 @@ type Entry struct {
 	Value interface{}
 }
 
+// Size implements the Value interface. Each Entry has size 1.
 func (Entry) Size() int { return 1 }
